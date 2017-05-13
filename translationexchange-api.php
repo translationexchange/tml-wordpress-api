@@ -195,7 +195,9 @@ function trex_api_get_posts($params)
 function trex_api_get_post($params)
 {
     $post = get_post($params['id']);
-    return trex_post_to_json($post);
+    $data = trex_post_to_json($post);
+    $data = trex_append_extra_post_content($params['id'], $data);
+    return $data;
 }
 
 /**
@@ -216,17 +218,17 @@ function trex_api_post_posts($params)
         return trex_api_render_error('Locale must be provided');
     }
 
-    $data = trex_prepare_post_params($params);
-
     if ($trex_api_strategy == 'wpml') {
-        return trex_insert_or_update_wpml_translation($data, $params['id'], 'post', $params['locale']);
+        return trex_insert_or_update_wpml_translation($params, $params['id'], 'post', $params['locale']);
     }
 
     if ($trex_api_strategy == 'polylang') {
-        return trex_insert_or_update_polylang_translation($data, $params['id'], $params['locale']);
+        return trex_insert_or_update_polylang_translation($params, $params['id'], $params['locale']);
     }
 
-    return trex_api_render_error('Unsupported strategy');
+    $data = trex_prepare_post_params($params);
+    $post = get_post(wp_insert_post($data));
+    return trex_post_to_json($post);
 }
 
 /**
@@ -286,7 +288,9 @@ function trex_api_get_pages($params)
 function trex_api_get_page($params)
 {
     $page = get_page($params['id']);
-    return trex_post_to_json($page);
+    $data = trex_post_to_json($page);
+    $data = trex_append_extra_post_content($params['id'], $data);
+    return $data;
 }
 
 /**
@@ -307,17 +311,17 @@ function trex_api_post_pages($params)
         return trex_api_render_error('Locale must be provided');
     }
 
-    $data = trex_prepare_post_params($params);
-
     if ($trex_api_strategy == 'wpml') {
-        return trex_insert_or_update_wpml_translation($data, $params['id'], 'page', $params['locale']);
+        return trex_insert_or_update_wpml_translation($params, $params['id'], 'page', $params['locale']);
     }
 
     if ($trex_api_strategy == 'polylang') {
-        return trex_insert_or_update_polylang_translation($data, $params['id'], $params['locale']);
+        return trex_insert_or_update_polylang_translation($params, $params['id'], $params['locale']);
     }
 
-    return trex_api_render_error('Unsupported strategy');
+    $data = trex_prepare_post_params($params);
+    $post = get_post(wp_insert_post($data));
+    return trex_post_to_json($post);
 }
 
 /**

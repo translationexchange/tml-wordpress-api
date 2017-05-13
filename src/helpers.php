@@ -31,6 +31,15 @@
 */
 
 /**
+ * Prints debug to log
+ *
+ * @param $var
+ */
+function trex_debug($var) {
+//    error_log(var_export($var, true));
+}
+
+/**
  * Convert post to JSON
  *
  * @param $post
@@ -70,8 +79,7 @@ function trex_post_to_json($post)
             'rendered' => $title
         ),
         'categories' => wp_get_post_categories($post->ID),
-        'tags' => wp_get_post_tags($post->ID),
-        'meta' => get_post_meta($post->ID),
+        'tags' => wp_get_post_tags($post->ID)
     );
 }
 
@@ -167,8 +175,10 @@ function trex_api_sanitize_response($data)
  * @param $locale
  * @return array
  */
-function trex_insert_or_update_wpml_translation($data, $original_post_id, $post_type, $locale)
+function trex_insert_or_update_wpml_translation($params, $original_post_id, $post_type, $locale)
 {
+    $data = trex_prepare_post_params($params);
+
     $lang = apply_filters('wpml_default_language', NULL);
 
     if ($locale == $lang) {
@@ -181,8 +191,12 @@ function trex_insert_or_update_wpml_translation($data, $original_post_id, $post_
         // simply update the translation of the page
         $data['ID'] = $translated_post_id;
         wp_insert_post($data);
+        trex_update_extra_post_content($original_post_id, $translated_post_id, $params);
+
     } else {
         $translated_post_id = wp_insert_post($data);
+        trex_update_post_metadata($original_post_id, $translated_post_id);
+        trex_update_extra_post_content($original_post_id, $translated_post_id, $params);
 
         // https://wpml.org/wpml-hook/wpml_element_type/
         $wpml_element_type = apply_filters('wpml_element_type', $post_type);
@@ -215,35 +229,134 @@ function trex_insert_or_update_wpml_translation($data, $original_post_id, $post_
  * @param $locale
  * @return array
  */
-function trex_insert_or_update_polylang_translation($data, $original_post_id, $locale)
+function trex_insert_or_update_polylang_translation($params, $original_post_id, $locale)
 {
+    $data = trex_prepare_post_params($params);
+
     if ($locale == pll_default_language()) {
         return trex_api_render_error('Translation cannot have the same locale as the original post');
     }
 
     $translated_post_id = pll_get_post($original_post_id, $locale);
 
-    if ($translated_post_id)
+    if ($translated_post_id) {
         $data['ID'] = $translated_post_id;
+        wp_insert_post($data);
+        trex_update_extra_post_content($original_post_id, $translated_post_id, $params);
 
-    $post = wp_insert_post($data);
+    } else {
+        $translated_post_id = wp_insert_post($data);
+        trex_update_post_metadata($original_post_id, $translated_post_id);
+        trex_update_extra_post_content($original_post_id, $translated_post_id, $params);
 
-    pll_set_post_language($post, $locale);
+        pll_set_post_language($translated_post_id, $locale);
 
-    $language = pll_default_language();
-    $mapping = array(
-        $language => $original_post_id,
-        $locale => $post
-    );
+        $language = pll_default_language();
+        $mapping = array(
+            $language => $original_post_id,
+            $locale => $translated_post_id
+        );
 
-    $languages = pll_languages_list();
-    foreach ($languages as $language) {
-        $post_id = pll_get_post($original_post_id, $language);
-        if ($post_id) $mapping[$language] = $post_id;
+        $languages = pll_languages_list();
+        foreach ($languages as $language) {
+            $post_id = pll_get_post($original_post_id, $language);
+            if ($post_id) $mapping[$language] = $post_id;
+        }
+
+        pll_save_post_translations($mapping);
     }
-
-    pll_save_post_translations($mapping);
 
     $post = get_post($translated_post_id);
     return trex_post_to_json($post);
+}
+
+/**
+ * Updates post metadata
+ *
+ * @param $original_post_id
+ * @param $translated_post_id
+ */
+function trex_update_post_metadata($original_post_id, $translated_post_id) {
+    $original_meta = get_post_meta($original_post_id);
+
+    foreach($original_meta as $key => $value) {
+        trex_debug($key);
+
+        if (is_array($value))
+            $value = $value[0];
+
+        if (preg_match('/^a:\d+/', $value)) {
+            $value = unserialize($value);
+        }
+
+        trex_debug($value);
+
+        update_post_meta($translated_post_id, $key, $value);
+    }
+}
+
+/**
+ * Updates extra translated content
+ *
+ * @param $original_post_id
+ * @param $translated_post_id
+ * @param $data
+ */
+function trex_update_extra_post_content($original_post_id, $translated_post_id, $data)
+{
+    if (isset($data['extra']['themes']['Ichiban'])) {
+        $ichiban = $data['extra']['themes']['Ichiban'];
+        $original_meta = get_post_meta($original_post_id);
+
+        if (isset($ichiban['splash'])) {
+            $splash = unserialize($original_meta['splash'][0]);
+
+            if (isset($ichiban['splash']['title'])) {
+                $splash['title'] = $ichiban['splash']['title'];
+            }
+
+            if (isset($ichiban['splash']['subtitle'])) {
+                $splash['subtitle'] = $ichiban['splash']['subtitle'];
+            }
+
+            if (isset($ichiban['splash']['content'])) {
+                $splash['content'] = $ichiban['splash']['content'];
+            }
+
+            update_post_meta($translated_post_id, 'splash', $splash);
+        }
+    }
+}
+
+/**
+ * Prepares additional content for translation
+ *
+ * @param $post_id
+ * @param $data
+ * @return mixed
+ */
+function trex_append_extra_post_content($post_id, $data)
+{
+    $theme = wp_get_theme();
+    $data['extra'] = array();
+
+    if ('Ichiban' == $theme->name) {
+        $data['extra'] = array();
+
+        $meta = get_post_meta($post_id);
+        if (isset($meta['splash']) && is_array($meta) && count($meta['splash']) > 0) {
+            $splash = unserialize($meta['splash'][0]);
+            $splash_content = array();
+            if (isset($splash['title']))
+                $splash_content['title'] = $splash['title'];
+            if (isset($splash['subtitle']))
+                $splash_content['subtitle'] = $splash['subtitle'];
+            if (isset($splash['content']))
+                $splash_content['content'] = $splash['content'];
+            $data['extra']['themes']['Ichiban']['splash'] = $splash_content;
+        }
+
+    }
+
+    return $data;
 }

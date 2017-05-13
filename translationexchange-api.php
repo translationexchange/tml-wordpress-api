@@ -43,6 +43,8 @@ if (!defined('ABSPATH')) exit;
 
 include_once(ABSPATH . 'wp-admin/includes/plugin.php');
 
+require_once(dirname(__FILE__) . '/src/helpers.php');
+
 global $trex_api_strategy;
 
 /**
@@ -52,125 +54,14 @@ function trex_api_init_plugin()
 {
     global $trex_api_strategy;
 
-    if (is_plugin_active('polylang/polylang.php')) {
+    if (is_plugin_active('sitepress-multilingual-cms/sitepress.php')) {
+        $trex_api_strategy = 'wpml';
+    } else if (is_plugin_active('polylang/polylang.php')) {
         $trex_api_strategy = 'polylang';
     }
 }
+
 add_action('plugins_loaded', 'trex_api_init_plugin', 2);
-
-/**
- * Convert post to JSON
- *
- * @param $post
- * @return array
- */
-function trex_post_to_json($post)
-{
-    $content = $post->post_content;
-    $content = apply_filters('the_content', $content);
-    $content = str_replace(']]>', ']]&gt;', $content);
-
-    $title = $post->post_title;
-    $title = apply_filters('the_title', $title);
-    $title = str_replace(']]>', ']]&gt;', $title);
-
-    return array(
-        'id' => $post->ID,
-        'date' => $post->post_date,
-        'date_gmt' => $post->post_date_gmt,
-        'modified' => $post->post_modified,
-        'modified_gmt' => $post->post_modified_gmt,
-        'slug' => $post->post_name,
-        'link' => get_permalink($post),
-        'status' => $post->post_status,
-        'type' => $post->post_type,
-        'author' => $post->post_author,
-        'featured_media' => $post->post_featured_media,
-        'parent' => $post->post_parent,
-        'template' => $post->post_template,
-        'format' => get_post_format($post),
-        'content' => array(
-            'plain' => $post->post_content,
-            'rendered' => $content
-        ),
-        'title' => array(
-            'plain' => $post->post_title,
-            'rendered' => $title
-        ),
-        'categories' => wp_get_post_categories($post->ID),
-        'tags' => wp_get_post_tags($post->ID),
-        'meta' => get_post_meta($post->ID),
-    );
-}
-
-/**
- * Convert params to post
- *
- * @param $params
- * @return array
- */
-function trex_prepare_post_params($params)
-{
-    return array(
-        'post_author' => isset($params['author']) ? $params['author'] : '',
-        'post_date' => isset($params['date']) ? $params['date'] : '',
-        'post_date_gmt' => isset($params['date_gmt']) ? $params['date_gmt'] : '',
-        'post_content' => isset($params['content']) ? $params['content'] : '',
-        'post_content_filtered' => isset($params['content_filtered']) ? $params['content_filtered'] : '',
-        'post_title' => isset($params['title']) ? $params['title'] : '',
-        'post_excerpt' => isset($params['excerpt']) ? $params['excerpt'] : '',
-        'post_status' => isset($params['status']) ? $params['status'] : 'draft',
-        'post_type' => isset($params['type']) ? $params['type'] : 'page',
-        'comment_status' => isset($params['comment_status']) ? $params['comment_status'] : 'closed',
-        'ping_status' => isset($params['ping_status']) ? $params['ping_status'] : 'closed',
-        'post_password' => isset($params['password']) ? $params['password'] : '',
-        'post_name' => isset($params['name']) ? $params['name'] : '',
-        'to_ping' => isset($params['to_ping']) ? $params['to_ping'] : '',
-        'pinged' => isset($params['pinged']) ? $params['pinged'] : '',
-        'post_modified' => isset($params['modified']) ? $params['modified'] : '',
-        'post_modified_gmt' => isset($params['modified_gmt']) ? $params['modified_gmt'] : '',
-        'post_parent' => isset($params['parent']) ? $params['parent'] : 0,
-        'menu_order' => isset($params['menu_order']) ? $params['menu_order'] : 0,
-        'post_mime_type' => isset($params['mime_type']) ? $params['mime_type'] : 0,
-        'guid' => isset($params['guid']) ? $params['guid'] : '',
-        'post_category' => isset($params['category']) ? $params['category'] : '',
-        'tax_input' => isset($params['tax_input']) ? $params['tax_input'] : array(),
-        'meta_input' => isset($params['meta_input']) ? $params['meta_input'] : array(),
-    );
-}
-
-/**
- * Create a pagination fragment
- *
- * @param $page
- * @param $per_page
- * @param $total_count
- * @return array
- */
-function trex_pagination($page, $per_page, $total_count)
-{
-    $total_pages = round($total_count / $per_page);
-    if ($total_count % $per_page > 0)
-        $total_pages = $total_pages + 1;
-
-    return array(
-        'page' => $page,
-        'per_page' => $per_page,
-        'total_count' => $total_count,
-        'total_pages' => $total_pages
-    );
-}
-
-/**
- * Sanitize JSON response
- *
- * @param $data
- * @return mixed
- */
-function trex_api_sanitize_response($data)
-{
-    return $data;
-}
 
 /**
  * Get localization strategy
@@ -195,8 +86,13 @@ function trex_api_get_languages($params)
     global $trex_api_strategy;
     $langs = array();
 
-    if ($trex_api_strategy == 'polylang') {
-        $langs = array('languages' => pll_languages_list(array()));
+    if ($trex_api_strategy == 'wpml') {
+        $wpml_langs = apply_filters('wpml_active_languages', NULL, 'orderby=id&order=desc');
+        foreach ($wpml_langs as $locale => $lang) {
+            array_push($langs, $locale);
+        }
+    } else if ($trex_api_strategy == 'polylang') {
+        $langs = pll_languages_list(array());
     }
 
     return trex_api_sanitize_response(array('languages' => $langs));
@@ -213,7 +109,9 @@ function trex_api_get_default_language($params)
     global $trex_api_strategy;
     $lang = 'en';
 
-    if ($trex_api_strategy == 'polylang') {
+    if ($trex_api_strategy == 'wpml') {
+        $lang = apply_filters('wpml_default_language', NULL);
+    } else if ($trex_api_strategy == 'polylang') {
         $lang = pll_default_language();
     }
 
@@ -231,7 +129,9 @@ function trex_api_get_current_language($params)
     global $trex_api_strategy;
     $lang = 'en';
 
-    if ($trex_api_strategy == 'polylang') {
+    if ($trex_api_strategy == 'wpml') {
+        $lang = apply_filters('wpml_current_language', NULL);
+    } else if ($trex_api_strategy == 'polylang') {
         $lang = pll_current_language();
     }
 
@@ -294,16 +194,7 @@ function trex_api_get_posts($params)
  */
 function trex_api_get_post($params)
 {
-    global $trex_api_strategy;
-
-    if ($trex_api_strategy == 'polylang') {
-        $locale = pll_default_language();
-        $post = pll_get_post($params['id'], $locale);
-        $post = get_post($post);
-    } else {
-        $post = get_post($params['id']);
-    }
-
+    $post = get_post($params['id']);
     return trex_post_to_json($post);
 }
 
@@ -317,36 +208,25 @@ function trex_api_post_posts($params)
 {
     global $trex_api_strategy;
 
-    $data = trex_prepare_post_params($params);
-
-    if ($trex_api_strategy == 'polylang') {
-        if (isset($params['locale']) && $params['locale'] != pll_default_language()) {
-            $translated_post_id = pll_get_post($params['id'], $params['locale']);
-
-            if ($translated_post_id)
-                $data['ID'] = $translated_post_id;
-
-            $page = wp_insert_post($data);
-
-            pll_set_post_language($page, $params['locale']);
-
-            $language = pll_default_language();
-            $mapping = array(
-                $language => $params['id'],
-                $params['locale'] => $page
-            );
-
-            $languages = pll_languages_list();
-            foreach ($languages as $language) {
-                $post_id = pll_get_post($params['id'], $language);
-                if ($post_id) $mapping[$language] = $post_id;
-            }
-
-            pll_save_post_translations($mapping);
-        }
+    if (!isset($params['id'])) {
+        return trex_api_render_error('Original post id must be provided');
     }
 
-    return trex_api_get_page(array('id' => $page));
+    if (!isset($params['locale'])) {
+        return trex_api_render_error('Locale must be provided');
+    }
+
+    $data = trex_prepare_post_params($params);
+
+    if ($trex_api_strategy == 'wpml') {
+        return trex_insert_or_update_wpml_translation($data, $params['id'], 'post', $params['locale']);
+    }
+
+    if ($trex_api_strategy == 'polylang') {
+        return trex_insert_or_update_polylang_translation($data, $params['id'], $params['locale']);
+    }
+
+    return trex_api_render_error('Unsupported strategy');
 }
 
 /**
@@ -405,16 +285,7 @@ function trex_api_get_pages($params)
  */
 function trex_api_get_page($params)
 {
-    global $trex_api_strategy;
-
-    if ($trex_api_strategy == 'polylang') {
-        $locale = pll_default_language();
-        $page = pll_get_post($params['id'], $locale);
-        $page = get_page($page);
-    } else {
-        $page = get_page($params['id']);
-    }
-
+    $page = get_page($params['id']);
     return trex_post_to_json($page);
 }
 
@@ -428,36 +299,25 @@ function trex_api_post_pages($params)
 {
     global $trex_api_strategy;
 
-    $data = trex_prepare_post_params($params);
-
-    if ($trex_api_strategy == 'polylang') {
-        if (isset($params['locale']) && $params['locale'] != pll_default_language()) {
-            $translated_post_id = pll_get_post($params['id'], $params['locale']);
-
-            if ($translated_post_id)
-                $data['ID'] = $translated_post_id;
-
-            $page = wp_insert_post($data);
-
-            pll_set_post_language($page, $params['locale']);
-
-            $language = pll_default_language();
-            $mapping = array(
-                $language => $params['id'],
-                $params['locale'] => $page
-            );
-
-            $languages = pll_languages_list();
-            foreach ($languages as $language) {
-                $post_id = pll_get_post($params['id'], $language);
-                if ($post_id) $mapping[$language] = $post_id;
-            }
-
-            pll_save_post_translations($mapping);
-        }
+    if (!isset($params['id'])) {
+        return trex_api_render_error('Original post id must be provided');
     }
 
-    return trex_api_get_page(array('id' => $page));
+    if (!isset($params['locale'])) {
+        return trex_api_render_error('Locale must be provided');
+    }
+
+    $data = trex_prepare_post_params($params);
+
+    if ($trex_api_strategy == 'wpml') {
+        return trex_insert_or_update_wpml_translation($data, $params['id'], 'page', $params['locale']);
+    }
+
+    if ($trex_api_strategy == 'polylang') {
+        return trex_insert_or_update_polylang_translation($data, $params['id'], $params['locale']);
+    }
+
+    return trex_api_render_error('Unsupported strategy');
 }
 
 /**

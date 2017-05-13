@@ -53,7 +53,7 @@ end
 
 puts "Deploying WordPress plugin version #{version}..."
 
-execute("zip -r dist/translation-exchange-api-#{version}.zip translationexchange-api.php readme.txt")
+execute("zip -r dist/translation-exchange-api-#{version}.zip translationexchange-api.php src/*.php readme.txt")
 
 execute("mkdir -R #{svn_folder}/tags/#{version}")
 execute("unzip dist/translation-exchange-api-#{version}.zip -d #{svn_folder}/tags/#{version}")

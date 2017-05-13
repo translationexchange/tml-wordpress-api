@@ -53,8 +53,6 @@ end
 
 puts "Deploying WordPress plugin version #{version}..."
 
-execute("mv cache cache_backup")
-execute("mkdir cache")
 execute("zip -r dist/translation-exchange-api-#{version}.zip translationexchange-api.php readme.txt")
 
 execute("mkdir -R #{svn_folder}/tags/#{version}")

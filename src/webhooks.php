@@ -1,13 +1,4 @@
 <?php
-/*
-  Plugin Name: Translation Exchange API
-  Plugin URI: http://wordpress.org/plugins/translationexchange-api/
-  Description: Translation Exchange API for WordPress.
-  Author: Translation Exchange, Inc
-  Version: 0.1.3
-  Author URI: https://translationexchange.com/
-  License: GPLv2 (http://www.gnu.org/licenses/old-licenses/gpl-2.0.html)
- */
 
 /*
   Copyright (c) 2017 Translation Exchange, Inc. https://translationexchange.com
@@ -39,35 +30,78 @@
     http://www.gnu.org/licenses/gpl-2.0.html
 */
 
-if (!defined('ABSPATH')) exit;
-
-include_once(ABSPATH . 'wp-admin/includes/plugin.php');
-
-require_once(dirname(__FILE__) . '/src/strategies/default_strategy.php');
-require_once(dirname(__FILE__) . '/src/strategies/polylang_strategy.php');
-require_once(dirname(__FILE__) . '/src/strategies/wpml_strategy.php');
-
-global $trex_api_strategy;
-global $disable_webhooks;
-
 /**
- * Init Plugin
+ * Adds webhooks to wordpress
+ *
+ * @param $params
  */
-function trex_api_init_plugin()
+function trex_api_post_webhooks($params)
 {
-    global $trex_api_strategy;
-
-    if (is_plugin_active('sitepress-multilingual-cms/sitepress.php')) {
-        $trex_api_strategy = new WpmlStrategy();
-    } else if (is_plugin_active('polylang/polylang.php')) {
-        $trex_api_strategy = new PolylangStrategy();
-    } else {
-        $trex_api_strategy = new DefaultStrategy();
+    if (!isset($params['webhooks'])) {
+        add_option('trex_api_webhooks', $params['webhooks']);
     }
 }
 
-add_action('plugins_loaded', 'trex_api_init_plugin', 2);
+/**
+ * Removes any webhooks from WordPress
+ *
+ * @param $params
+ */
+function trex_api_delete_webhooks($params)
+{
+    delete_option('trex_api_webhooks');
+}
 
-include_once(dirname(__FILE__) . '/src/basic_auth.php');
-include_once(dirname(__FILE__) . '/src/api.php');
-include_once(dirname(__FILE__) . '/src/routes.php');
+/**
+ * Get webhook by key
+ *
+ * @param $key
+ */
+function trex_get_webhook($key)
+{
+    $webhooks = get_option('trex_api_webhooks');
+
+    if (!$webhooks)
+        return null;
+
+    $webhooks = json_decode($webhooks, true);
+    if (!isset($webhooks[$key]))
+        return null;
+
+    return $webhooks[$key];
+}
+
+/**
+ * Trigger workflows
+ *
+ * @param $post_id
+ * @return bool
+ */
+function trex_webhook_save_post($post_id)
+{
+    global $disable_webhooks;
+    if ($disable_webhooks) return;
+
+    try {
+//        $webhook = trex_get_webhook('save_post');
+//        if (!$webhook) return;
+
+        $url = 'http://localhost:3000/v1/linked_accounts/tdhtqr8rq8e0404hi10joa1lqe9h0re14/callback'; // $webhook["url"]
+        $post_type = get_post_type($post_id);
+        $resp = wp_remote_post($url, array(
+                'method' => 'POST',
+                'timeout' => 10,
+                'redirection' => 5,
+                'httpversion' => '1.0',
+                'blocking' => false,
+                'body' => array("post_id" => $post_id, "post_type" => $post_type))
+        );
+
+    } catch (Exception $e) {
+        echo 'Caught exception on triggering workflow: ', $e->getMessage(), "\n";
+    }
+
+    return true;
+}
+
+add_action('save_post', 'trex_webhook_save_post');

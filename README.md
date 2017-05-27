@@ -2,10 +2,10 @@
   <img src="https://avatars0.githubusercontent.com/u/1316274?v=3&s=200">
 </p>
 
-Tml Plugin For Wordpress
+Tml API Plugin For Wordpress
 =====================
 
-This plugin uses Tml PHP Client SDK to enable inline translations of WordPress posts and page contents.
+This plugin adds an extra layer of the API to integrate with WPML and Polylang localization plugins.
 
 
 Documentation

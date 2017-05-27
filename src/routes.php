@@ -30,94 +30,96 @@
     http://www.gnu.org/licenses/gpl-2.0.html
 */
 
+if (has_action('rest_api_init')) {
 
-add_action('rest_api_init', function () {
-    register_rest_route('translationexchange/v1', '/strategy', array(
-        'methods' => 'GET',
-        'callback' => 'trex_api_get_strategy',
-        'permission_callback' => function () {
-            return current_user_can('edit_posts');
-        }
-    ));
+    add_action('rest_api_init', function () {
+        register_rest_route('translationexchange/v1', '/strategy', array(
+            'methods' => 'GET',
+            'callback' => 'trex_api_get_strategy',
+            'permission_callback' => function () {
+                return current_user_can('edit_posts');
+            }
+        ));
 
-    register_rest_route('translationexchange/v1', '/webhooks', array(
-        'methods' => 'POST',
-        'callback' => 'trex_api_post_webhooks',
-        'permission_callback' => function () {
-            return current_user_can('edit_posts');
-        }
-    ));
+        register_rest_route('translationexchange/v1', '/webhooks', array(
+            'methods' => 'POST',
+            'callback' => 'trex_api_post_webhooks',
+            'permission_callback' => function () {
+                return current_user_can('edit_posts');
+            }
+        ));
 
-    register_rest_route('translationexchange/v1', '/webhooks', array(
-        'methods' => 'DELETE',
-        'callback' => 'trex_api_delete_webhooks',
-        'permission_callback' => function () {
-            return current_user_can('edit_posts');
-        }
-    ));
+        register_rest_route('translationexchange/v1', '/webhooks', array(
+            'methods' => 'DELETE',
+            'callback' => 'trex_api_delete_webhooks',
+            'permission_callback' => function () {
+                return current_user_can('edit_posts');
+            }
+        ));
 
-    register_rest_route('translationexchange/v1', '/languages', array(
-        'methods' => 'GET',
-        'callback' => 'trex_api_get_languages',
-        'permission_callback' => function () {
-            return current_user_can('edit_posts');
-        }
-    ));
+        register_rest_route('translationexchange/v1', '/languages', array(
+            'methods' => 'GET',
+            'callback' => 'trex_api_get_languages',
+            'permission_callback' => function () {
+                return current_user_can('edit_posts');
+            }
+        ));
 
-    register_rest_route('translationexchange/v1', '/languages/default', array(
-        'methods' => 'GET',
-        'callback' => 'trex_api_get_default_language',
-        'permission_callback' => function () {
-            return current_user_can('edit_posts');
-        }
-    ));
+        register_rest_route('translationexchange/v1', '/languages/default', array(
+            'methods' => 'GET',
+            'callback' => 'trex_api_get_default_language',
+            'permission_callback' => function () {
+                return current_user_can('edit_posts');
+            }
+        ));
 
-    register_rest_route('translationexchange/v1', '/posts', array(
-        'methods' => 'GET',
-        'callback' => 'trex_api_get_posts',
-        'permission_callback' => function () {
-            return current_user_can('edit_posts');
-        }
-    ));
+        register_rest_route('translationexchange/v1', '/posts', array(
+            'methods' => 'GET',
+            'callback' => 'trex_api_get_posts',
+            'permission_callback' => function () {
+                return current_user_can('edit_posts');
+            }
+        ));
 
-    register_rest_route('translationexchange/v1', '/posts/(?P<id>\d+)', array(
-        'methods' => 'GET',
-        'callback' => 'trex_api_get_post',
-        'permission_callback' => function () {
-            return current_user_can('edit_posts');
-        }
-    ));
+        register_rest_route('translationexchange/v1', '/posts/(?P<id>\d+)', array(
+            'methods' => 'GET',
+            'callback' => 'trex_api_get_post',
+            'permission_callback' => function () {
+                return current_user_can('edit_posts');
+            }
+        ));
 
-    register_rest_route('translationexchange/v1', '/posts', array(
-        'methods' => 'POST',
-        'callback' => 'trex_api_post_posts',
-        'permission_callback' => function () {
-            return current_user_can('edit_posts');
-        }
-    ));
+        register_rest_route('translationexchange/v1', '/posts', array(
+            'methods' => 'POST',
+            'callback' => 'trex_api_post_posts',
+            'permission_callback' => function () {
+                return current_user_can('edit_posts');
+            }
+        ));
 
-    register_rest_route('translationexchange/v1', '/pages', array(
-        'methods' => 'GET',
-        'callback' => 'trex_api_get_pages',
-        'permission_callback' => function () {
-            return current_user_can('edit_pages');
-        }
-    ));
+        register_rest_route('translationexchange/v1', '/pages', array(
+            'methods' => 'GET',
+            'callback' => 'trex_api_get_pages',
+            'permission_callback' => function () {
+                return current_user_can('edit_pages');
+            }
+        ));
 
-    register_rest_route('translationexchange/v1', '/pages/(?P<id>\d+)', array(
-        'methods' => 'GET',
-        'callback' => 'trex_api_get_page',
-        'permission_callback' => function () {
-            return current_user_can('edit_pages');
-        }
-    ));
+        register_rest_route('translationexchange/v1', '/pages/(?P<id>\d+)', array(
+            'methods' => 'GET',
+            'callback' => 'trex_api_get_page',
+            'permission_callback' => function () {
+                return current_user_can('edit_pages');
+            }
+        ));
 
-    register_rest_route('translationexchange/v1', '/pages', array(
-        'methods' => 'POST',
-        'callback' => 'trex_api_post_pages',
-        'permission_callback' => function () {
-            return current_user_can('edit_pages');
-        }
-    ));
+        register_rest_route('translationexchange/v1', '/pages', array(
+            'methods' => 'POST',
+            'callback' => 'trex_api_post_pages',
+            'permission_callback' => function () {
+                return current_user_can('edit_pages');
+            }
+        ));
 
-});
+    });
+}

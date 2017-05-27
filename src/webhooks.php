@@ -83,12 +83,13 @@ function trex_webhook_save_post($post_id)
     if ($disable_webhooks) return;
 
     try {
-//        $webhook = trex_get_webhook('save_post');
-//        if (!$webhook) return;
+        $webhook = trex_get_webhook('save_post');
+        if (!$webhook) return;
 
-        $url = 'http://localhost:3000/v1/linked_accounts/tdhtqr8rq8e0404hi10joa1lqe9h0re14/callback'; // $webhook["url"]
+        $url = $webhook["url"];
+//        $url = 'http://localhost:3000/v1/linked_accounts/tdhtqr8rq8e0404hi10joa1lqe9h0re14/callback';
         $post_type = get_post_type($post_id);
-        $resp = wp_remote_post($url, array(
+        wp_remote_post($url, array(
                 'method' => 'POST',
                 'timeout' => 10,
                 'redirection' => 5,
@@ -98,7 +99,7 @@ function trex_webhook_save_post($post_id)
         );
 
     } catch (Exception $e) {
-        echo 'Caught exception on triggering workflow: ', $e->getMessage(), "\n";
+//        echo 'Caught exception on triggering workflow: ', $e->getMessage(), "\n";
     }
 
     return true;

@@ -2,7 +2,7 @@
   <img src="https://avatars0.githubusercontent.com/u/1316274?v=3&s=200">
 </p>
 
-Tml API Plugin For Wordpress
+Translation Exchange API Plugin For WordPress
 =====================
 
 This plugin adds an extra layer of the API to integrate with WPML and Polylang localization plugins.

@@ -35,7 +35,14 @@ if (has_action('rest_api_init')) {
     add_action('rest_api_init', function () {
         register_rest_route('translationexchange/v1', '/strategy', array(
             'methods' => 'GET',
-            'callback' => 'trex_api_get_strategy',
+            'callback' => function ($params) {
+                try {
+                    global $trex_api_strategy;
+                    return array('strategy' => $trex_api_strategy->getName());
+                } catch (Exception $ex) {
+                    return array('status' => 'error', 'message' => $ex->getMessage());
+                }
+            },
             'permission_callback' => function () {
                 return current_user_can('edit_posts');
             }
@@ -43,7 +50,16 @@ if (has_action('rest_api_init')) {
 
         register_rest_route('translationexchange/v1', '/webhooks', array(
             'methods' => 'POST',
-            'callback' => 'trex_api_post_webhooks',
+            'callback' => function ($params) {
+                try {
+                    if (!isset($params['webhooks'])) {
+                        add_option('trex_api_webhooks', $params['webhooks']);
+                    }
+                    return array("status" => "Ok");
+                } catch (Exception $ex) {
+                    return array('status' => 'error', 'message' => $ex->getMessage());
+                }
+            },
             'permission_callback' => function () {
                 return current_user_can('edit_posts');
             }
@@ -51,7 +67,14 @@ if (has_action('rest_api_init')) {
 
         register_rest_route('translationexchange/v1', '/webhooks', array(
             'methods' => 'DELETE',
-            'callback' => 'trex_api_delete_webhooks',
+            'callback' => function ($params) {
+                try {
+                    delete_option('trex_api_webhooks');
+                    return array("status" => "Ok");
+                } catch (Exception $ex) {
+                    return array('status' => 'error', 'message' => $ex->getMessage());
+                }
+            },
             'permission_callback' => function () {
                 return current_user_can('edit_posts');
             }
@@ -59,7 +82,29 @@ if (has_action('rest_api_init')) {
 
         register_rest_route('translationexchange/v1', '/languages', array(
             'methods' => 'GET',
-            'callback' => 'trex_api_get_languages',
+            'callback' => function ($params) {
+                try {
+                    global $trex_api_strategy;
+                    return $trex_api_strategy->getLanguages($params);
+                } catch (Exception $ex) {
+                    return array('status' => 'error', 'message' => $ex->getMessage());
+                }
+            },
+            'permission_callback' => function () {
+                return current_user_can('edit_posts');
+            }
+        ));
+
+        register_rest_route('translationexchange/v1', '/languages', array(
+            'methods' => 'POST',
+            'callback' => function ($params) {
+                try {
+                    global $trex_api_strategy;
+                    return $trex_api_strategy->addLanguages($params);
+                } catch (Exception $ex) {
+                    return array('status' => 'error', 'message' => $ex->getMessage());
+                }
+            },
             'permission_callback' => function () {
                 return current_user_can('edit_posts');
             }
@@ -67,7 +112,14 @@ if (has_action('rest_api_init')) {
 
         register_rest_route('translationexchange/v1', '/languages/default', array(
             'methods' => 'GET',
-            'callback' => 'trex_api_get_default_language',
+            'callback' => function ($params) {
+                try {
+                    global $trex_api_strategy;
+                    return $trex_api_strategy->getDefaultLanguage($params);
+                } catch (Exception $ex) {
+                    return array('status' => 'error', 'message' => $ex->getMessage());
+                }
+            },
             'permission_callback' => function () {
                 return current_user_can('edit_posts');
             }
@@ -75,7 +127,14 @@ if (has_action('rest_api_init')) {
 
         register_rest_route('translationexchange/v1', '/posts', array(
             'methods' => 'GET',
-            'callback' => 'trex_api_get_posts',
+            'callback' => function ($params) {
+                try {
+                    global $trex_api_strategy;
+                    return $trex_api_strategy->getPosts($params);
+                } catch (Exception $ex) {
+                    return array('status' => 'error', 'message' => $ex->getMessage());
+                }
+            },
             'permission_callback' => function () {
                 return current_user_can('edit_posts');
             }
@@ -83,15 +142,46 @@ if (has_action('rest_api_init')) {
 
         register_rest_route('translationexchange/v1', '/posts/(?P<id>\d+)', array(
             'methods' => 'GET',
-            'callback' => 'trex_api_get_post',
+            'callback' => function ($params) {
+                try {
+                    global $trex_api_strategy;
+                    return $trex_api_strategy->getPost($params);
+                } catch (Exception $ex) {
+                    return array('status' => 'error', 'message' => $ex->getMessage());
+                }
+            },
             'permission_callback' => function () {
                 return current_user_can('edit_posts');
             }
         ));
 
-        register_rest_route('translationexchange/v1', '/posts', array(
+        register_rest_route('translationexchange/v1', '/posts/(?P<id>\d+)/translations', array(
+            'methods' => 'GET',
+            'callback' => function ($params) {
+                try {
+                    global $trex_api_strategy;
+                    return $trex_api_strategy->getPostTranslations($params);
+                } catch (Exception $ex) {
+                    return array('status' => 'error', 'message' => $ex->getMessage());
+                }
+            },
+            'permission_callback' => function () {
+                return current_user_can('edit_posts');
+            }
+        ));
+
+        register_rest_route('translationexchange/v1', '/posts/(?P<id>\d+)/translations', array(
             'methods' => 'POST',
-            'callback' => 'trex_api_post_posts',
+            'callback' => function ($params) {
+                try {
+                    global $disable_webhooks;
+                    $disable_webhooks = true;
+                    global $trex_api_strategy;
+                    return $trex_api_strategy->insertOrUpdateTranslation($params, 'post');
+                } catch (Exception $ex) {
+                    return array('status' => 'error', 'message' => $ex->getMessage());
+                }
+            },
             'permission_callback' => function () {
                 return current_user_can('edit_posts');
             }
@@ -99,7 +189,14 @@ if (has_action('rest_api_init')) {
 
         register_rest_route('translationexchange/v1', '/pages', array(
             'methods' => 'GET',
-            'callback' => 'trex_api_get_pages',
+            'callback' => function ($params) {
+                try {
+                    global $trex_api_strategy;
+                    return $trex_api_strategy->getPages($params);
+                } catch (Exception $ex) {
+                    return array('status' => 'error', 'message' => $ex->getMessage());
+                }
+            },
             'permission_callback' => function () {
                 return current_user_can('edit_pages');
             }
@@ -107,15 +204,46 @@ if (has_action('rest_api_init')) {
 
         register_rest_route('translationexchange/v1', '/pages/(?P<id>\d+)', array(
             'methods' => 'GET',
-            'callback' => 'trex_api_get_page',
+            'callback' => function ($params) {
+                try {
+                    global $trex_api_strategy;
+                    return $trex_api_strategy->getPage($params);
+                } catch (Exception $ex) {
+                    return array('status' => 'error', 'message' => $ex->getMessage());
+                }
+            },
             'permission_callback' => function () {
                 return current_user_can('edit_pages');
             }
         ));
 
-        register_rest_route('translationexchange/v1', '/pages', array(
+        register_rest_route('translationexchange/v1', '/pages/(?P<id>\d+)/translations', array(
+            'methods' => 'GET',
+            'callback' => function ($params) {
+                try {
+                    global $trex_api_strategy;
+                    return $trex_api_strategy->getPageTranslations($params);
+                } catch (Exception $ex) {
+                    return array('status' => 'error', 'message' => $ex->getMessage());
+                }
+            },
+            'permission_callback' => function () {
+                return current_user_can('edit_posts');
+            }
+        ));
+
+        register_rest_route('translationexchange/v1', '/pages/(?P<id>\d+)/translations', array(
             'methods' => 'POST',
-            'callback' => 'trex_api_post_pages',
+            'callback' => function ($params) {
+                try {
+                    global $disable_webhooks;
+                    $disable_webhooks = true;
+                    global $trex_api_strategy;
+                    return $trex_api_strategy->insertOrUpdateTranslation($params, 'page');
+                } catch (Exception $ex) {
+                    return array('status' => 'error', 'message' => $ex->getMessage());
+                }
+            },
             'permission_callback' => function () {
                 return current_user_can('edit_pages');
             }

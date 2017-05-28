@@ -32,21 +32,43 @@
 
 class PolylangStrategy extends DefaultStrategy
 {
+    /**
+     * Get name
+     *
+     * @return string
+     */
     public function getName()
     {
         return 'polylang';
     }
 
-    public function getLanguages($params)
+    /**
+     * Return supported languages
+     *
+     * @return mixed
+     */
+    public function getSupportedLocales()
     {
         return pll_languages_list(array());
     }
 
-    public function getDefaultLanguage($params)
+    /**
+     * Return default locale
+     *
+     * @return mixed
+     */
+    public function getDefaultLocale()
     {
         return pll_default_language();
     }
 
+    /**
+     * Insert or update blog post or page
+     *
+     * @param $params
+     * @param $post_type
+     * @return array
+     */
     public function insertOrUpdateTranslation($params, $post_type)
     {
         if (!isset($params['id'])) {

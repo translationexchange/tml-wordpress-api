@@ -203,6 +203,16 @@ class DefaultStrategy
     }
 
     /**
+     * Returns supported locales
+     *
+     * @return array
+     */
+    public function getSupportedLocales()
+    {
+        return array('en');
+    }
+
+    /**
      * Get all enabled languages
      *
      * @param $params
@@ -210,7 +220,49 @@ class DefaultStrategy
      */
     public function getLanguages($params)
     {
-        return array();
+        return array("languages" => $this->getSupportedLocales());
+    }
+
+    /**
+     * Adds a languages to the WP
+     *
+     * @param $locale
+     */
+    public function addLanguage($locale)
+    {
+        // do nothing
+    }
+
+    /**
+     *
+     * @param $params
+     * @return array
+     */
+    public function addLanguages($params)
+    {
+        if (!isset($params['locales']))
+            return $this->renderApiError('Locales must be provided');
+
+        $locales = $params['locales'];
+
+        if (is_string($locales))
+            $locales = explode(',', $locales);
+
+        foreach ($locales as $locale) {
+            $this->addLanguage($locale);
+        }
+
+        return array("languages" => $this->getSupportedLocales());
+    }
+
+    /**
+     * Returns default locale
+     *
+     * @return mixed
+     */
+    public function getDefaultLocale()
+    {
+        return get_option("qtranslate_default_language", 'en');
     }
 
     /**
@@ -221,7 +273,7 @@ class DefaultStrategy
      */
     public function getDefaultLanguage($params)
     {
-        return 'en';
+        return array("language" => $this->getDefaultLocale());
     }
 
     /**
@@ -335,7 +387,8 @@ class DefaultStrategy
      * @param $params
      * @return array|mixed
      */
-    public function getPost($params) {
+    public function getPost($params)
+    {
         if (!isset($params['id'])) {
             return $this->renderApiError('Post id must be provided');
         }
@@ -344,6 +397,28 @@ class DefaultStrategy
         $data = $this->postToJson($post);
         $data = $this->appendExtraPostContent($params['id'], $data);
         return $data;
+    }
+
+    /**
+     * Returns post translations
+     *
+     * @param $params
+     * @return array
+     */
+    public function getPostTranslations($params)
+    {
+        return array();
+    }
+
+    /**
+     * Returns page translations
+     *
+     * @param $params
+     * @return array
+     */
+    public function getPageTranslations($params)
+    {
+        return $this->getPostTranslations($params);
     }
 
     /**
@@ -388,7 +463,7 @@ class DefaultStrategy
         $results = array();
 
         foreach ($pages as $post) {
-            array_push($results,  $this->postToJson($post));
+            array_push($results, $this->postToJson($post));
         }
 
         $pagination = $this->pagination($page, $per_page, $total_count);
@@ -402,7 +477,8 @@ class DefaultStrategy
      * @param $params
      * @return array|mixed
      */
-    public function getPage($params) {
+    public function getPage($params)
+    {
         if (!isset($params['id'])) {
             return $this->renderApiError('Page id must be provided');
         }

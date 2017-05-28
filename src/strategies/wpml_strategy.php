@@ -32,29 +32,51 @@
 
 class WpmlStrategy extends DefaultStrategy
 {
+    /**
+     * Return name
+     *
+     * @return string
+     */
     public function getName()
     {
         return 'wpml';
     }
 
-    public function getLanguages($params)
+    /**
+     * Get support locales
+     *
+     * @return array
+     */
+    public function getSupportedLocales()
     {
-        $langs = array();
+        $locales = array();
 
         $wpml_langs = apply_filters('wpml_active_languages', NULL, 'orderby=id&order=desc');
         foreach ($wpml_langs as $locale => $lang) {
-            array_push($langs, $locale);
+            array_push($locales, $locale);
         }
 
-        return $langs;
+        return $locales;
     }
 
-    public function getDefaultLanguage($params)
+    /**
+     * Get default locale
+     *
+     * @return mixed
+     */
+    public function getDefaultLocale()
     {
         return apply_filters('wpml_default_language', NULL);
     }
 
 
+    /**
+     * Insert or update post or page
+     *
+     * @param $params
+     * @param $post_type
+     * @return array
+     */
     public function insertOrUpdateTranslation($params, $post_type)
     {
         if (!isset($params['id'])) {

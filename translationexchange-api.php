@@ -46,6 +46,7 @@ include_once(ABSPATH . 'wp-admin/includes/plugin.php');
 require_once(dirname(__FILE__) . '/src/strategies/default_strategy.php');
 require_once(dirname(__FILE__) . '/src/strategies/polylang_strategy.php');
 require_once(dirname(__FILE__) . '/src/strategies/wpml_strategy.php');
+require_once(dirname(__FILE__) . '/src/strategies/qtranslate_strategy.php');
 
 global $trex_api_strategy;
 global $disable_webhooks;
@@ -61,6 +62,8 @@ function trex_api_init_plugin()
         $trex_api_strategy = new WpmlStrategy();
     } else if (is_plugin_active('polylang/polylang.php')) {
         $trex_api_strategy = new PolylangStrategy();
+    } else if (is_plugin_active('qtranslate-x/qtranslate.php')) {
+        $trex_api_strategy = new QTranslateStrategy();
     } else {
         $trex_api_strategy = new DefaultStrategy();
     }
@@ -69,5 +72,5 @@ function trex_api_init_plugin()
 add_action('plugins_loaded', 'trex_api_init_plugin', 2);
 
 include_once(dirname(__FILE__) . '/src/basic_auth.php');
-include_once(dirname(__FILE__) . '/src/api.php');
+include_once(dirname(__FILE__) . '/src/webhooks.php');
 include_once(dirname(__FILE__) . '/src/routes.php');

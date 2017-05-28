@@ -31,28 +31,6 @@
 */
 
 /**
- * Adds webhooks to wordpress
- *
- * @param $params
- */
-function trex_api_post_webhooks($params)
-{
-    if (!isset($params['webhooks'])) {
-        add_option('trex_api_webhooks', $params['webhooks']);
-    }
-}
-
-/**
- * Removes any webhooks from WordPress
- *
- * @param $params
- */
-function trex_api_delete_webhooks($params)
-{
-    delete_option('trex_api_webhooks');
-}
-
-/**
  * Get webhook by key
  *
  * @param $key
